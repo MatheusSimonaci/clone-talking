@@ -1,0 +1,22 @@
+{
+  "name": "clone-talking",
+  "version": "1.0.0",
+  "description": "Talk to an AI clone of any agent persona via your phone — voice in, voice out.",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "@ngrok/ngrok": "^1.4.0",
+    "dotenv": "^16.4.1",
+    "express": "^4.18.2",
+    "inquirer": "^8.2.6",
+    "js-yaml": "^4.1.0",
+    "openai": "^4.28.0",
+    "qrcode-terminal": "^0.12.0",
+    "ws": "^8.16.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

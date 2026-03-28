@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice Clone</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0d0d0d;
+      color: #e8e8e8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1.5rem 1rem 2rem;
+      gap: 1rem;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    h1 { font-size: 1.2rem; font-weight: 600; flex: 1; }
+
+    #conn-badge {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #555;
+      flex-shrink: 0;
+    }
+    #conn-badge.connected { background: #4ade80; }
+    #conn-badge.error { background: #f87171; }
+
+    #status {
+      font-size: 0.8rem;
+      color: #888;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    #transcript {
+      width: 100%;
+      max-width: 480px;
+      flex: 1;
+      overflow-y: auto;
+      background: #1a1a1a;
+      border-radius: 14px;
+      padding: 1rem;
+      min-height: 260px;
+      max-height: 55vh;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .msg {
+      padding: 0.5rem 0.75rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      line-height: 1.45;
+      max-width: 90%;
+      word-break: break-word;
+    }
+    .msg.user {
+      background: #1e3a5f;
+      color: #93c5fd;
+      align-self: flex-end;
+    }
+    .msg.assistant {
+      background: #14532d;
+      color: #86efac;
+      align-self: flex-start;
+    }
+    .msg.error-msg {
+      background: #450a0a;
+      color: #fca5a5;
+      align-self: center;
+      font-size: 0.85rem;
+    }
+
+    #empty-hint {
+      color: #444;
+      font-size: 0.9rem;
+      text-align: center;
+      margin: auto;
+    }
+
+    #talk-btn {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 3px solid #333;
+      background: #1f1f1f;
+      color: #e8e8e8;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: background 0.15s, transform 0.1s, border-color 0.15s;
+      flex-shrink: 0;
+    }
+    #talk-btn:not(:disabled):active,
+    #talk-btn.recording {
+      background: #7f1d1d;
+      border-color: #ef4444;
+      transform: scale(1.08);
+    }
+    #talk-btn:disabled {
+      background: #111;
+      border-color: #222;
+      color: #444;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Voice Clone</h1>
+    <div id="conn-badge" title="Connection status"></div>
+  </header>
+
+  <div id="status">Connecting...</div>
+
+  <div id="transcript">
+    <div id="empty-hint">Hold the button and speak</div>
+  </div>
+
+  <button id="talk-btn" disabled>Hold to Talk</button>
+
+  <script src="app.js"></script>
+</body>
+</html>
