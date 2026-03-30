@@ -13,7 +13,7 @@
 
 <p align="center">
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-18%2B-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node.js" /></a>
-  <a href="https://fish.audio"><img src="https://img.shields.io/badge/Fish%20Audio-Voice%20Cloning-00bcd4?style=flat-square" alt="Fish Audio" /></a>
+  <a href="https://voispark.com"><img src="https://img.shields.io/badge/VoiSpark-Voice%20Cloning-00bcd4?style=flat-square" alt="VoiSpark" /></a>
   <a href="https://openrouter.ai/"><img src="https://img.shields.io/badge/OpenRouter-Any%20Model-6366f1?style=flat-square" alt="OpenRouter" /></a>
   <a href="https://openai.com/"><img src="https://img.shields.io/badge/Whisper-Speech--to--Text-412991?style=flat-square&logo=openai&logoColor=white" alt="Whisper" /></a>
   <a href="https://ngrok.com/"><img src="https://img.shields.io/badge/ngrok-HTTPS%20Tunnel-1f1e37?style=flat-square" alt="ngrok" /></a>
@@ -26,7 +26,7 @@
 
 Clone Talking is a voice AI web app that brings personas to life. Run a server on your PC, scan a QR code with your phone, hold a button to speak, and the AI responds in a cloned voice — in real time.
 
-Whether you want to chat with Albert Einstein, Sherlock Holmes, or a fully custom persona you create — it's just a few taps away. No app installation. No cloud hosting. Just your PC and your phone.
+Whether you want to chat with Elon Musk, a custom mentor, or any fully custom persona you create — it's just a few taps away. No app installation. No cloud hosting. Just your PC and your phone.
 
 <br/>
 
@@ -47,7 +47,7 @@ Whether you want to chat with Albert Einstein, Sherlock Holmes, or a fully custo
    ┌───────────────────────┐
    │ Whisper (OpenAI)      │  Audio → Text
    │ OpenRouter LLM        │  Text  → Response
-   │ Fish Audio TTS        │  Text  → Cloned Voice
+   │ VoiSpark TTS          │  Text  → Cloned Voice
    └──────────┬────────────┘
               ▼
          ┌─────────────┐
@@ -68,7 +68,7 @@ Ultra-low latency WebSocket pipeline. STT → LLM → TTS with no polling.
 </td>
 <td align="center" width="33%">
 <h3>🧬 Voice Cloning</h3>
-Fish Audio synthesizes natural, expressive voices from a single <code>reference_id</code>.
+VoiSpark synthesizes natural, expressive voices — supports celebrity voices and custom clones.
 </td>
 <td align="center" width="33%">
 <h3>🤖 Any AI Model</h3>
@@ -103,7 +103,7 @@ Every conversation saved as structured JSON. Timestamps, roles, full history.
 |---------|---------|---------|
 | **OpenRouter** | LLM routing (any model) | [openrouter.ai/keys](https://openrouter.ai/keys) |
 | **OpenAI** | Whisper speech-to-text | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| **Fish Audio** | Text-to-speech + voice cloning | [fish.audio](https://fish.audio) → Dashboard → API Key |
+| **VoiSpark** | Text-to-speech with voice cloning | [voispark.com](https://voispark.com) → Settings → API Tokens |
 | **ngrok** | HTTPS tunnel for mobile mic | [dashboard.ngrok.com](https://dashboard.ngrok.com/get-started/your-authtoken) |
 
 <br/>
@@ -130,7 +130,9 @@ Edit `.env` with your keys:
 OPENROUTER_API_KEY=your-key-here
 OPENROUTER_MODEL=anthropic/claude-sonnet-4-5
 OPENAI_API_KEY=your-key-here
-FISH_AUDIO_API_KEY=your-key-here
+VOISPARK_API_KEY=your-key-here
+VOISPARK_PROVIDER=fish-audio
+VOISPARK_MODEL_ID=s1
 NGROK_AUTHTOKEN=your-token-here
 ```
 
@@ -142,7 +144,7 @@ npm start
 
 The wizard will:
 - List all available clones
-- Ask for a Fish Audio voice ID (saved automatically for future runs)
+- Ask for a VoiSpark voice ID (saved automatically for future runs)
 - Start the server on `localhost:3000`
 - Open an ngrok HTTPS tunnel
 - Display a QR code in your terminal
@@ -164,7 +166,9 @@ The wizard will:
 | `OPENROUTER_API_KEY` | Yes | LLM routing key | `sk-or-v1-...` |
 | `OPENROUTER_MODEL` | Yes | Model to use | `anthropic/claude-sonnet-4-5` |
 | `OPENAI_API_KEY` | Yes | Whisper STT key | `sk-proj-...` |
-| `FISH_AUDIO_API_KEY` | Yes | TTS + voice cloning | `your-fish-key` |
+| `VOISPARK_API_KEY` | Yes | TTS + voice cloning | `your-voispark-key` |
+| `VOISPARK_PROVIDER` | No | TTS provider (default: `fish-audio`) | `fish-audio` |
+| `VOISPARK_MODEL_ID` | No | Provider model (default: `s1`) | `s1` |
 | `NGROK_AUTHTOKEN` | Yes | HTTPS tunnel token | `...your-token...` |
 | `PORT` | No | Server port (default: 3000) | `3000` |
 
@@ -188,66 +192,64 @@ When you chat with a clone, the file body becomes the LLM's system prompt.
 
 ```markdown
 ---
-id: einstein
-name: Albert Einstein
-description: Renowned theoretical physicist and Nobel Prize winner
-voiceId: ""
+id: elon-musk
+name: Elon Musk
+description: Strategic mentor — First Principles, The Algorithm, Maniacal Urgency
+voiceId: b43a971a-f770-41fe-8afd-d245423ee75a
 ---
 
-You are Albert Einstein, the brilliant theoretical physicist known for the theory of relativity.
-Speak with curiosity and wonder. Use thought experiments to explain complex concepts.
+You are Elon Musk — entrepreneur, engineer, and strategic mentor.
+Apply first principles thinking. Question every requirement. Delete before building.
 ```
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `id` | Yes | Unique identifier — used in `npm start -- einstein` |
+| `id` | Yes | Unique identifier — used in `npm start -- elon-musk` |
 | `name` | Yes | Display name shown in the setup wizard |
 | `description` | Yes | Short description shown in the setup wizard |
-| `voiceId` | No | Fish Audio `reference_id` — saved automatically if left empty |
+| `voiceId` | No | VoiSpark voice project ID — saved automatically if left empty |
 
 ### Adding a custom clone
 
 ```bash
-cat > clones/yoda.md << 'EOF'
+cat > clones/my-mentor.md << 'EOF'
 ---
-id: yoda
-name: Yoda
-description: Ancient Jedi Master. Wise, mysterious, speaks in reverse syntax.
+id: my-mentor
+name: My Mentor
+description: A custom strategic advisor persona.
 voiceId: ""
 ---
 
-You are Yoda, the ancient Jedi Master from Star Wars. You have 900 years of wisdom.
-Speak in your characteristic way: often reverse your sentence syntax for emphasis.
-Example: "Confused, you are. Patient, you must be."
+You are a sharp, direct strategic advisor.
+Give concise, actionable answers. Ask clarifying questions before diving in.
 EOF
 ```
 
 Then run it:
 
 ```bash
-npm start -- yoda
+npm start -- my-mentor
 ```
 
-On first run, the wizard will ask for a Fish Audio voice ID. It saves automatically.
+On first run, the wizard will ask for a VoiSpark voice ID. It saves automatically.
 
-### Voice IDs (Fish Audio)
+### Voice IDs (VoiSpark)
 
-Each clone needs a **Fish Audio Reference ID** — identifies a specific cloned voice.
+Each clone needs a **VoiSpark Voice ID** — identifies a celebrity voice or custom clone.
 
 **How to get a Voice ID:**
-1. Go to [fish.audio](https://fish.audio) and log in
-2. Click **Voices** in the dashboard
-3. Either select a community voice or clone your own (upload a short audio sample)
-4. Copy the **Reference ID** from the voice detail page
+1. Go to [voispark.com](https://voispark.com) and log in
+2. Browse **Celebrity Voices** or the voice catalog
+3. Select a voice and copy its **Project ID**
+4. Paste it as the `voiceId` in your clone's frontmatter or enter it during setup
 
 **How voices are stored:**
 
-Voice IDs are saved automatically in `.voice-config.json`:
+Voice IDs are saved automatically in `.voice-config.json` (gitignored):
 
 ```json
 {
-  "einstein": { "voiceId": "your-reference-id-here" },
-  "sherlock": { "voiceId": "your-reference-id-here" }
+  "elon-musk": { "voiceId": "b43a971a-f770-41fe-8afd-d245423ee75a" }
 }
 ```
 
@@ -262,11 +264,10 @@ You can also edit `.voice-config.json` directly, or set a `voiceId` in the clone
 npm start
 
 # Direct mode — skip wizard
-npm start -- einstein
-npm start -- sherlock
+npm start -- elon-musk
 
 # Raw Node.js
-node src/server.js einstein
+node src/server.js elon-musk
 ```
 
 <br/>
@@ -299,7 +300,7 @@ Client (Browser)
        │
        ├─→ OpenRouter (any LLM)        ← Text → Response
        │
-       ├─→ Fish Audio API              ← Text → Cloned Voice (streamed)
+       ├─→ VoiSpark TTS API            ← Text → Cloned Voice (streamed)
        │
        └─→ ngrok Tunnel               ← HTTPS for mobile mic access
 ```
@@ -309,7 +310,7 @@ Client (Browser)
 1. **Client** records audio and sends it via WebSocket
 2. **Whisper** transcribes audio to text
 3. **OpenRouter LLM** generates a response using the clone's system prompt
-4. **Fish Audio** streams synthesized audio with the clone's voice
+4. **VoiSpark** streams synthesized audio with the clone's voice
 5. **Server** streams audio chunks back to the client in real time
 6. **Logger** saves the full exchange to a session JSON file
 
@@ -326,8 +327,8 @@ logs/session-2026-03-28-15-30-00.json
 ```json
 {
   "sessionId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "cloneFile": "clones/einstein.md",
-  "voiceId": "your-reference-id",
+  "cloneFile": "clones/elon-musk.md",
+  "voiceId": "b43a971a-f770-41fe-8afd-d245423ee75a",
   "model": "anthropic/claude-sonnet-4-5",
   "startedAt": "2026-03-28T15:30:00.000Z",
   "messages": [
@@ -370,9 +371,9 @@ The `logs/` directory is gitignored.
 **Problem:** Text response appears but no audio plays.
 
 **Solution:**
-1. Check `FISH_AUDIO_API_KEY` in `.env`
-2. Verify the voice Reference ID at [fish.audio](https://fish.audio) — confirm it exists in your account
-3. Check your Fish Audio credit balance
+1. Check `VOISPARK_API_KEY` in `.env`
+2. Verify the voice project ID at [voispark.com](https://voispark.com) — confirm it exists in your account
+3. Check your VoiSpark credit balance
 4. Look at the server terminal for API errors
 
 </details>
@@ -384,7 +385,7 @@ The `logs/` directory is gitignored.
 
 **Solution:**
 1. Switch to a faster model: `OPENROUTER_MODEL=openai/gpt-4o-mini`
-2. Check your internet speed — Whisper and Fish Audio need good bandwidth
+2. Check your internet speed — Whisper and VoiSpark need good bandwidth
 3. Verify your OpenRouter API key has credits
 
 </details>
@@ -412,7 +413,7 @@ Clone Talking is a tool for creative, educational, and entertainment purposes. V
 - ❌ **Harassment** — using cloned voices to harass, defame, or harm individuals
 - ❌ **Disinformation** — creating fake audio attributed to real people to spread false information
 
-> **By using this project, you agree to comply with all applicable laws and the terms of service of each API provider (Fish Audio, OpenRouter, OpenAI, ngrok).** The author is not responsible for any misuse of this software.
+> **By using this project, you agree to comply with all applicable laws and the terms of service of each API provider (VoiSpark, OpenRouter, OpenAI, ngrok).** The author is not responsible for any misuse of this software.
 
 If you witness abuse, report it to the relevant platform or authority.
 
@@ -437,6 +438,6 @@ MIT License. See [LICENSE](LICENSE) for details.
 ---
 
 <p align="center">
-  <sub>Built with Node.js · Express · WebSocket · OpenAI Whisper · OpenRouter · Fish Audio</sub><br/>
+  <sub>Built with Node.js · Express · WebSocket · OpenAI Whisper · OpenRouter · VoiSpark</sub><br/>
   <sub><em>Talk to anyone. From anywhere. Voice first.</em></sub>
 </p>
