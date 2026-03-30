@@ -2,7 +2,7 @@ const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
 
-function createSession({ agentFile, voiceId, model }) {
+function createSession({ cloneFile, voiceId, model }) {
   fs.mkdirSync('logs', { recursive: true })
 
   const timestamp = new Date().toISOString()
@@ -11,7 +11,7 @@ function createSession({ agentFile, voiceId, model }) {
 
   const session = {
     sessionId: crypto.randomUUID(),
-    agentFile,
+    cloneFile,
     voiceId,
     model,
     startedAt: new Date().toISOString(),

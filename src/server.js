@@ -14,11 +14,11 @@ const { processTurn } = require('./pipeline')
 const PORT = parseInt(process.env.PORT || '3000', 10)
 
 async function main() {
-  const agentArg = process.argv[2] || null
-  const config = await runSetup(agentArg)
+  const cloneArg = process.argv[2] || null
+  const config = await runSetup(cloneArg)
 
   const session = createSession({
-    agentFile: config.agentFile,
+    cloneFile: config.cloneFile,
     voiceId: config.voiceId,
     model: config.model,
   })
@@ -33,12 +33,25 @@ async function main() {
   wss.on('connection', (socket) => {
     console.log('[ws] Client connected')
     const history = []
+    let pendingMimeType = 'audio/webm'
 
-    socket.on('message', async (data) => {
-      if (Buffer.isBuffer(data) || data instanceof ArrayBuffer) {
-        const buf = Buffer.isBuffer(data) ? data : Buffer.from(data)
-        await processTurn({ audioBuffer: buf, socket, history, session, config })
+    socket.send(JSON.stringify({
+      type: 'clone_info',
+      cloneName: config.cloneName,
+      cloneId: config.cloneId,
+    }))
+
+    socket.on('message', async (data, isBinary) => {
+      if (!isBinary) {
+        try {
+          const msg = JSON.parse(data.toString())
+          if (msg.type === 'end_call') session.flush()
+          else if (msg.type === 'audio_meta') pendingMimeType = msg.mimeType || 'audio/webm'
+        } catch {}
+        return
       }
+      const buf = Buffer.from(data)
+      await processTurn({ audioBuffer: buf, socket, history, session, config, mimeType: pendingMimeType })
     })
 
     socket.on('close', () => {

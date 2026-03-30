@@ -1,26 +1,25 @@
 async function* streamTTS({ text, voiceId, apiKey }) {
-  const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`
+  const url = 'https://api.fish.audio/v1/tts'
 
   const response = await fetch(url, {
     method: 'POST',
     headers: {
-      'xi-api-key': apiKey,
+      Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      Accept: 'audio/mpeg',
     },
     body: JSON.stringify({
       text,
-      model_id: 'eleven_monolingual_v1',
-      voice_settings: {
-        stability: 0.5,
-        similarity_boost: 0.75,
-      },
+      reference_id: voiceId,
+      format: 'mp3',
+      streaming: true,
     }),
   })
 
   if (!response.ok) {
-    const err = await response.text()
-    throw new Error(`ElevenLabs error ${response.status}: ${err}`)
+    const errText = await response.text()
+    let errMsg = errText
+    try { errMsg = JSON.parse(errText).message || errText } catch {}
+    throw new Error(`Fish Audio error ${response.status}: ${errMsg}`)
   }
 
   const reader = response.body.getReader()

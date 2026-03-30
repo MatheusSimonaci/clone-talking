@@ -28,5 +28,15 @@ Thumbs.db
 .claude/settings.local.json
 .aiox/install-log.txt
 
+# AI/Dev Tool Configs (local only — not project code)
+.aiox-core/
+.antigravity/
+.claude/
+.codex/
+.cursor/
+.gemini/
+.omc/
+.github/
+
 # Voice Clone App
 .voice-config.json

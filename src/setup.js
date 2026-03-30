@@ -2,44 +2,55 @@ const fs = require('fs')
 const path = require('path')
 const inquirer = require('inquirer')
 
-// Per-agent config map: { "dev": { voiceId: "..." }, "qa": { voiceId: "..." } }
+// Per-clone config map: { "einstein": { voiceId: "..." }, "sherlock": { voiceId: "..." } }
 const CONFIG_FILE = '.voice-config.json'
-const AGENTS_DIR = path.join('.claude', 'commands', 'AIOX', 'agents')
+const CLONES_DIR = path.join('.', 'clones')
 
 // ---------------------------------------------------------------------------
-// Agent file parser
+// Clone file parser
 // ---------------------------------------------------------------------------
 
-function parseAgentFile(filePath) {
-  let content = fs.readFileSync(filePath, 'utf8')
+function parseCloneFile(filePath) {
+  const raw = fs.readFileSync(filePath, 'utf8')
 
-  // Strip YAML frontmatter (--- ... ---)
-  content = content.replace(/^---[\s\S]*?---\n?/, '')
+  // Extract YAML frontmatter between --- delimiters
+  const frontmatterMatch = raw.match(/^---\n([\s\S]*?)\n---\n?/)
+  let id = path.basename(filePath, '.md')
+  let name = id
+  let description = ''
+  let voiceId = ''
 
-  // Strip fenced code blocks (```...```)
-  content = content.replace(/```[\s\S]*?```/g, '')
+  if (frontmatterMatch) {
+    const frontmatter = frontmatterMatch[1]
 
-  // Strip HTML-style tags
-  content = content.replace(/<[^>]+>/g, '')
+    const idMatch = frontmatter.match(/^id:\s*(.+)$/m)
+    const nameMatch = frontmatter.match(/^name:\s*(.+)$/m)
+    const descMatch = frontmatter.match(/^description:\s*(.+)$/m)
+    const voiceMatch = frontmatter.match(/^voiceId:\s*(.*)$/m)
 
-  // Clean up excessive blank lines
-  const systemPrompt = content.replace(/\n{3,}/g, '\n\n').trim()
+    if (idMatch) id = idMatch[1].trim()
+    if (nameMatch) name = nameMatch[1].trim()
+    if (descMatch) description = descMatch[1].trim()
+    if (voiceMatch) voiceId = voiceMatch[1].trim()
+  }
 
-  const name = path.basename(filePath, '.md')
-  return { name, systemPrompt }
+  // Everything after the frontmatter block is the system prompt
+  const systemPrompt = raw.replace(/^---\n[\s\S]*?\n---\n?/, '').trim()
+
+  return { id, name, description, voiceId, systemPrompt, filePath }
 }
 
-function listAgentFiles() {
-  if (!fs.existsSync(AGENTS_DIR)) return []
-  return fs.readdirSync(AGENTS_DIR)
+function listCloneFiles() {
+  if (!fs.existsSync(CLONES_DIR)) return []
+  return fs.readdirSync(CLONES_DIR)
     .filter(f => f.endsWith('.md'))
-    .map(f => path.join(AGENTS_DIR, f))
+    .map(f => path.join(CLONES_DIR, f))
 }
 
-function findAgentFile(agentName) {
-  const filePath = path.join(AGENTS_DIR, `${agentName}.md`)
+function findCloneFile(cloneId) {
+  const filePath = path.join(CLONES_DIR, `${cloneId}.md`)
   if (!fs.existsSync(filePath)) {
-    throw new Error(`Agent file not found: ${filePath}\nRun "npm start" without arguments to see available agents.`)
+    throw new Error(`Clone file not found: ${filePath}\nRun "npm start" without arguments to see available clones.`)
   }
   return filePath
 }
@@ -66,67 +77,69 @@ function saveConfigs(configs) {
 // ---------------------------------------------------------------------------
 
 /**
- * @param {string|null} agentArg - agent name from CLI arg, or null for interactive
+ * @param {string|null} cloneArg - clone id from CLI arg, or null for interactive
  */
-async function runSetup(agentArg) {
+async function runSetup(cloneArg) {
   await promptMissingApiKeys()
 
   const model = resolveModel()
   const configs = loadConfigs()
 
-  let agentFile
-  let agentName
+  let clone
 
-  if (agentArg) {
-    // Direct mode: agent name given via CLI
-    agentFile = findAgentFile(agentArg)
-    agentName = agentArg
+  if (cloneArg) {
+    // Direct mode: clone id given via CLI
+    const filePath = findCloneFile(cloneArg)
+    clone = parseCloneFile(filePath)
   } else {
     // Interactive: let user pick
-    const agentFiles = listAgentFiles()
-    if (agentFiles.length === 0) {
-      throw new Error(`No .md agent files found in ${AGENTS_DIR}`)
+    const cloneFiles = listCloneFiles()
+    if (cloneFiles.length === 0) {
+      throw new Error(`No .md clone files found in ${CLONES_DIR}`)
     }
-    const { chosen } = await inquirer.prompt([{
+    const clones = cloneFiles.map(f => parseCloneFile(f))
+    const { chosenId } = await inquirer.prompt([{
       type: 'list',
-      name: 'chosen',
-      message: 'Which agent do you want to clone?',
-      choices: agentFiles.map(f => ({ name: path.basename(f, '.md'), value: f })),
+      name: 'chosenId',
+      message: 'Which clone do you want to talk to?',
+      choices: clones.map(c => ({
+        name: `${c.name} — ${c.description}`,
+        value: c.id,
+      })),
     }])
-    agentFile = chosen
-    agentName = path.basename(chosen, '.md')
+    clone = clones.find(c => c.id === chosenId)
   }
 
-  // Check if this agent already has a saved voice ID
-  const savedVoiceId = configs[agentName]?.voiceId
+  // Resolve voice ID: saved config overrides frontmatter default
+  const savedVoiceId = configs[clone.id]?.voiceId
+  const defaultVoiceId = savedVoiceId || clone.voiceId || ''
   let voiceId
 
-  if (savedVoiceId) {
-    if (agentArg) {
-      // Non-interactive: use saved voice ID directly
-      voiceId = savedVoiceId
+  if (defaultVoiceId) {
+    if (cloneArg) {
+      // Non-interactive: use saved/default voice ID directly
+      voiceId = defaultVoiceId
     } else {
       const { reuse } = await inquirer.prompt([{
         type: 'confirm',
         name: 'reuse',
-        message: `Use saved ElevenLabs voice ID for "${agentName}"? (${savedVoiceId})`,
+        message: `Use saved Fish Audio voice ID for "${clone.name}"? (${defaultVoiceId})`,
         default: true,
       }])
-      voiceId = reuse ? savedVoiceId : await promptVoiceId()
+      voiceId = reuse ? defaultVoiceId : await promptVoiceId()
     }
   } else {
     voiceId = await promptVoiceId()
   }
 
-  // Save updated config
-  configs[agentName] = { voiceId }
+  // Save updated config (user-entered override keyed by clone id)
+  configs[clone.id] = { voiceId }
   saveConfigs(configs)
 
   // Preview system prompt (interactive mode only)
-  const { systemPrompt } = parseAgentFile(agentFile)
-  if (!agentArg) {
+  if (!cloneArg) {
     console.log('\n--- System prompt preview (first 300 chars) ---')
-    console.log(systemPrompt.slice(0, 300) + (systemPrompt.length > 300 ? '...' : ''))
+    console.log(clone.systemPrompt.slice(0, 300) + (clone.systemPrompt.length > 300 ? '...' : ''))
     console.log(`---\nModel: ${model}\n`)
 
     const { confirm } = await inquirer.prompt([{
@@ -137,16 +150,17 @@ async function runSetup(agentArg) {
     }])
     if (!confirm) process.exit(0)
   } else {
-    console.log(`[setup] Agent: ${agentName} | Model: ${model}`)
+    console.log(`[setup] Clone: ${clone.name} | Model: ${model}`)
   }
 
   return {
-    agentFile,
-    agentName,
-    systemPrompt,
+    cloneFile: clone.filePath,
+    cloneId: clone.id,
+    cloneName: clone.name,
+    systemPrompt: clone.systemPrompt,
     voiceId,
     model,
-    elevenLabsApiKey: process.env.ELEVENLABS_API_KEY,
+    voisparkApiKey: process.env.VOISPARK_API_KEY,
   }
 }
 
@@ -169,7 +183,7 @@ async function promptVoiceId() {
   const { voiceId } = await inquirer.prompt([{
     type: 'input',
     name: 'voiceId',
-    message: 'ElevenLabs Voice ID (from elevenlabs.io → Voices):',
+    message: 'VoiSpark Voice ID (voice_id from your VoiSpark clone):',
     validate: v => v.trim().length > 0 || 'Voice ID is required',
   }])
   return voiceId.trim()
@@ -184,8 +198,8 @@ async function promptMissingApiKeys() {
   if (!process.env.OPENAI_API_KEY) {
     questions.push({ type: 'input', name: 'openaiKey', message: 'OpenAI API key (Whisper STT):' })
   }
-  if (!process.env.ELEVENLABS_API_KEY) {
-    questions.push({ type: 'input', name: 'elevenLabsKey', message: 'ElevenLabs API key:' })
+  if (!process.env.VOISPARK_API_KEY) {
+    questions.push({ type: 'input', name: 'voisparkKey', message: 'VoiSpark API key:' })
   }
   if (!process.env.NGROK_AUTHTOKEN) {
     questions.push({
@@ -200,7 +214,7 @@ async function promptMissingApiKeys() {
   const answers = await inquirer.prompt(questions)
   if (answers.openrouterKey) process.env.OPENROUTER_API_KEY = answers.openrouterKey.trim()
   if (answers.openaiKey) process.env.OPENAI_API_KEY = answers.openaiKey.trim()
-  if (answers.elevenLabsKey) process.env.ELEVENLABS_API_KEY = answers.elevenLabsKey.trim()
+  if (answers.voisparkKey) process.env.VOISPARK_API_KEY = answers.voisparkKey.trim()
   if (answers.ngrokToken && answers.ngrokToken.trim()) {
     process.env.NGROK_AUTHTOKEN = answers.ngrokToken.trim()
   }
